@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>R&D Value Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        
+        /* Custom Range Slider Styling */
+        input[type=range] {
+            -webkit-appearance: none; 
+            width: 100%; 
+            background: transparent; 
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            margin-top: -6px;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #e2e8f0;
+            border-radius: 2px;
+        }
+        
+        .card-shadow {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        }
+        .metric-card {
+            border-left: 4px solid #3b82f6;
+            transition: transform 0.2s;
+        }
+        .metric-card:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <div class="flex flex-col md:flex-row min-h-screen">
+        
+        <!-- SIDEBAR: CONTROL PANEL -->
+        <aside class="w-full md:w-80 bg-white border-r border-slate-200 p-6 flex-shrink-0 overflow-y-auto h-screen sticky top-0">
+            <div class="mb-8">
+                <h1 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                    <span>📊</span> R&D Calculator
+                </h1>
+                <p class="text-xs text-slate-500 mt-1">Financial Modeling Tool</p>
+            </div>
+
+            <div class="space-y-8">
+                <!-- Section 1 -->
+                <div>
+                    <h3 class="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">1. Cost of Capital</h3>
+                    
+                    <div class="mb-4">
+                        <div class="flex justify-between mb-1">
+                            <label class="text-sm font-medium text-slate-700">Hurdle Rate (WACC)</label>
+                            <span class="text-sm font-bold text-blue-600" id="val-wacc">10.0%</span>
+                        </div>
+                        <input type="range" id="wacc" min="0" max="20" step="0.5" value="10">
+                        <p class="text-xs text-slate-400 mt-1">Return investors expect.</p>
+                    </div>
+                </div>
+
+                <!-- Section 2 -->
+                <div>
+                    <h3 class="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">2. Investment Profile</h3>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Initial R&D Spend ($M)</label>
+                        <input type="number" id="investment" class="w-full border border-slate-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500 text-sm" value="5.0" step="0.1" min="0.1">
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="flex justify-between mb-1">
+                            <label class="text-sm font-medium text-slate-700">Duration (Years)</label>
+                            <span class="text-sm font-bold text-blue-600" id="val-duration">5</span>
+                        </div>
+                        <input type="range" id="duration" min="3" max="10" step="1" value="5">
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="flex justify-between mb-1">
+                            <label class="text-sm font-medium text-slate-700">Tax Rate</label>
+                            <span class="text-sm font-bold text-blue-600" id="val-tax">21%</span>
+                        </div>
+                        <input type="range" id="tax" min="0" max="40" step="1" value="21">
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="flex-1 p-6 md:p-10 overflow-y-auto bg-slate-50">
+            
+            <div class="max-w-6xl mx-auto">
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-slate-900">Project Assumptions</h2>
+                    <p class="text-slate-500">Define projected benefits to calculate ROI.</p>
+                </div>
+
+                <!-- INPUTS GRID -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <!-- Revenue Col -->
+                    <div class="bg-white p-6 rounded-lg border border-slate-200 card-shadow">
+                        <div class="flex items-center gap-2 mb-4">
+                            <div class="p-2 bg-green-100 rounded text-green-600">💰</div>
+                            <h3 class="font-semibold text-slate-900">Revenue Impact</h3>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Annual Revenue Uplift ($M)</label>
+                            <input type="number" id="rev-uplift" class="w-full border border-slate-300 rounded px-3 py-2 text-sm" value="2.0" step="0.1">
+                        </div>
+                        
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <label class="text-xs font-medium text-slate-500">Annual Growth</label>
+                                <span class="text-xs font-bold text-slate-700" id="val-rev-growth">5%</span>
+                            </div>
+                            <input type="range" id="rev-growth" min="0" max="20" step="1" value="5">
+                        </div>
+                    </div>
+
+                    <!-- Savings Col -->
+                    <div class="bg-white p-6 rounded-lg border border-slate-200 card-shadow">
+                        <div class="flex items-center gap-2 mb-4">
+                            <div class="p-2 bg-blue-100 rounded text-blue-600">⚡</div>
+                            <h3 class="font-semibold text-slate-900">Efficiency Gains</h3>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Annual Cost Savings ($M)</label>
+                            <input type="number" id="savings" class="w-full border border-slate-300 rounded px-3 py-2 text-sm" value="0.5" step="0.1">
+                        </div>
+                        
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <label class="text-xs font-medium text-slate-500">Annual Growth</label>
+                                <span class="text-xs font-bold text-slate-700" id="val-sav-growth">2%</span>
+                            </div>
+                            <input type="range" id="sav-growth" min="0" max="20" step="1" value="2">
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="border-slate-200 mb-8">
+
+                <!-- EXECUTIVE DASHBOARD -->
+                <div class="mb-6 flex items-center justify-between">
+                    <h2 class="text-2xl font-bold text-slate-900">Executive Dashboard</h2>
+                    <span id="status-badge" class="px-3 py-1 rounded-full text-sm font-bold bg-gray-200 text-gray-600">Calculating...</span>
+                </div>
+
+                <!-- KPI CARDS -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    <div class="bg-white p-5 rounded-lg card-shadow metric-card">
+                        <p class="text-xs font-semibold text-slate-400 uppercase">Net Present Value</p>
+                        <h3 class="text-3xl font-bold text-slate-900 mt-1" id="kpi-npv">--</h3>
+                        <p class="text-xs text-slate-500 mt-2">Value in today's dollars</p>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-lg card-shadow metric-card" style="border-left-color: #8b5cf6;">
+                        <p class="text-xs font-semibold text-slate-400 uppercase">IRR</p>
+                        <h3 class="text-3xl font-bold text-slate-900 mt-1" id="kpi-irr">--</h3>
+                        <p class="text-xs text-slate-500 mt-2">Hurdle: <span id="kpi-hurdle">10%</span></p>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-lg card-shadow metric-card" style="border-left-color: #10b981;">
+                        <p class="text-xs font-semibold text-slate-400 uppercase">Payback Period</p>
+                        <h3 class="text-3xl font-bold text-slate-900 mt-1" id="kpi-payback">--</h3>
+                        <p class="text-xs text-slate-500 mt-2">Years to break even</p>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-lg card-shadow metric-card" style="border-left-color: #f59e0b;">
+                        <p class="text-xs font-semibold text-slate-400 uppercase">ROI Multiple</p>
+                        <h3 class="text-3xl font-bold text-slate-900 mt-1" id="kpi-roi">--</h3>
+                        <p class="text-xs text-slate-500 mt-2">Total Cash / Invest</p>
+                    </div>
+                </div>
+
+                <!-- ANALYSIS MESSAGE -->
+                <div id="analysis-box" class="mb-8 p-4 rounded-md bg-green-50 border border-green-200 text-green-800 text-sm font-medium flex items-start gap-3">
+                    <span class="text-lg">✅</span>
+                    <span id="analysis-text">Value Added.</span>
+                </div>
+
+                <!-- CHARTS -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
+                    <div class="bg-white p-4 rounded-lg card-shadow border border-slate-200">
+                        <div id="chart-cf" class="w-full h-80"></div>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg card-shadow border border-slate-200">
+                        <div id="chart-waterfall" class="w-full h-80"></div>
+                    </div>
+                </div>
+
+                <!-- TABLE TOGGLE -->
+                <div class="bg-white rounded-lg border border-slate-200 card-shadow overflow-hidden">
+                    <button onclick="toggleTable()" class="w-full px-6 py-4 text-left font-semibold text-slate-700 flex justify-between items-center hover:bg-slate-50">
+                        <span>🔎 View Detailed Financial Model</span>
+                        <span id="table-arrow">▼</span>
+                    </button>
+                    <div id="table-container" class="hidden overflow-x-auto">
+                        <table class="w-full text-sm text-left text-slate-600">
+                            <thead class="text-xs text-slate-700 uppercase bg-slate-50 border-b">
+                                <tr>
+                                    <th class="px-6 py-3">Year</th>
+                                    <th class="px-6 py-3">Rev Uplift</th>
+                                    <th class="px-6 py-3">Savings</th>
+                                    <th class="px-6 py-3">Tax</th>
+                                    <th class="px-6 py-3">FCF</th>
+                                    <th class="px-6 py-3">Cumulative</th>
+                                </tr>
+                            </thead>
+                            <tbody id="financial-table-body">
+                                <!-- JS populates this -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // --- DOM ELEMENTS ---
+        const inputs = {
+            wacc: document.getElementById('wacc'),
+            investment: document.getElementById('investment'),
+            duration: document.getElementById('duration'),
+            tax: document.getElementById('tax'),
+            revUplift: document.getElementById('rev-uplift'),
+            revGrowth: document.getElementById('rev-growth'),
+            savings: document.getElementById('savings'),
+            savGrowth: document.getElementById('sav-growth'),
+        };
+
+        const labels = {
+            wacc: document.getElementById('val-wacc'),
+            duration: document.getElementById('val-duration'),
+            tax: document.getElementById('val-tax'),
+            revGrowth: document.getElementById('val-rev-growth'),
+            savGrowth: document.getElementById('val-sav-growth'),
+            hurdle: document.getElementById('kpi-hurdle')
+        };
+
+        // --- FINANCIAL MATH FUNCTIONS ---
+
+        function npv(rate, values) {
+            return values.reduce((acc, val, i) => acc + val / Math.pow(1 + rate, i), 0);
+        }
+
+        function irr(values, guess = 0.1) {
+            // Newton-Raphson method
+            const maxIter = 1000;
+            const tol = 1e-6;
+            let rate = guess;
+
+            for (let i = 0; i < maxIter; i++) {
+                let npvVal = 0;
+                let deriv = 0;
+                for (let j = 0; j < values.length; j++) {
+                    const term = Math.pow(1 + rate, j);
+                    npvVal += values[j] / term;
+                    deriv -= j * values[j] / (term * (1 + rate));
+                }
+                
+                const newRate = rate - npvVal / deriv;
+                if (Math.abs(newRate - rate) < tol) return newRate;
+                rate = newRate;
+            }
+            return rate; // fallback
+        }
+
+        function formatCurrency(val) {
+            return '$' + val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + 'M';
+        }
+
+        // --- MAIN CALCULATION ---
+
+        function calculate() {
+            // 1. Get Values
+            const wacc = parseFloat(inputs.wacc.value) / 100;
+            const invest = parseFloat(inputs.investment.value);
+            const years = parseInt(inputs.duration.value);
+            const taxRate = parseFloat(inputs.tax.value) / 100;
+            const revBase = parseFloat(inputs.revUplift.value);
+            const revG = parseFloat(inputs.revGrowth.value) / 100;
+            const savBase = parseFloat(inputs.savings.value);
+            const savG = parseFloat(inputs.savGrowth.value) / 100;
+
+            // Update Labels
+            labels.wacc.innerText = (wacc * 100).toFixed(1) + '%';
+            labels.duration.innerText = years;
+            labels.tax.innerText = (taxRate * 100).toFixed(0) + '%';
+            labels.revGrowth.innerText = (revG * 100).toFixed(0) + '%';
+            labels.savGrowth.innerText = (savG * 100).toFixed(0) + '%';
+            labels.hurdle.innerText = (wacc * 100).toFixed(1) + '%';
+
+            // 2. Generate Cash Flows
+            let cashFlows = [];
+            let tableData = [];
+            let cumulative = 0;
+            let paybackIndex = -1;
+            let totalRev = 0;
+            let totalSav = 0;
+            let totalTax = 0;
+            let totalFCF = 0;
+
+            for (let i = 0; i <= years; i++) {
+                let cf = 0, rev = 0, sav = 0, tax = 0;
+
+                if (i === 0) {
+                    cf = -invest;
+                } else {
+                    rev = revBase * Math.pow(1 + revG, i - 1);
+                    sav = savBase * Math.pow(1 + savG, i - 1);
+                    const ebitda = rev + sav;
+                    tax = ebitda * taxRate;
+                    cf = ebitda - tax;
+                    
+                    totalRev += rev;
+                    totalSav += sav;
+                    totalTax += tax;
+                }
+
+                cumulative += cf;
+                totalFCF += i === 0 ? 0 : cf; // operating FCF only
+                cashFlows.push(cf);
+
+                // Detect Payback
+                if (cumulative >= 0 && paybackIndex === -1) {
+                    // Linear interpolation for fractional year
+                    const prevCum = cumulative - cf;
+                    paybackIndex = (i - 1) + (Math.abs(prevCum) / cf);
+                }
+
+                tableData.push({ year: i, rev, sav, tax, cf, cumulative });
+            }
+
+            // 3. Metrics
+            const npvVal = npv(wacc, cashFlows);
+            let irrVal = irr(cashFlows);
+            if (isNaN(irrVal) || !isFinite(irrVal)) irrVal = 0;
+            
+            const roi = (totalFCF + (-invest)) / invest; // Net profit / cost
+            
+            // 4. Update UI Metrics
+            document.getElementById('kpi-npv').innerText = formatCurrency(npvVal);
+            document.getElementById('kpi-irr').innerText = (irrVal * 100).toFixed(1) + '%';
+            
+            const pbEl = document.getElementById('kpi-payback');
+            if (paybackIndex > 0) {
+                pbEl.innerText = paybackIndex.toFixed(1) + ' Years';
+            } else {
+                pbEl.innerText = '> ' + years + ' Years';
+            }
+            
+            // ROI Calculation: Total Inflows / Total Outflows
+            // Or simple ROI = (Total Returns - Cost) / Cost. 
+            // Using streamlt logic: (Sum FCF + Invest) / Invest. Note: Sum FCF includes the negative invest, so we add it back to get raw return
+            const roiMetric = (cashFlows.reduce((a,b)=>a+b,0) - cashFlows[0]) / Math.abs(cashFlows[0]); 
+            // Replicating exact python logic: (df["Free Cash Flow"].sum() + initial_investment) / initial_investment
+            // My loop accumulated totalFCF (operating only). 
+            const displayRoi = (totalFCF / invest); 
+            document.getElementById('kpi-roi').innerText = displayRoi.toFixed(1) + 'x';
+
+            // 5. Status Box
+            const statusBadge = document.getElementById('status-badge');
+            const analysisBox = document.getElementById('analysis-box');
+            const analysisText = document.getElementById('analysis-text');
+
+            if (npvVal > 0) {
+                statusBadge.className = "px-3 py-1 rounded-full text-sm font-bold bg-green-100 text-green-700";
+                statusBadge.innerText = "Value Add";
+                analysisBox.className = "mb-8 p-4 rounded-md bg-green-50 border border-green-200 text-green-800 text-sm font-medium flex items-start gap-3";
+                analysisBox.innerHTML = `<span class="text-lg">✅</span> <div><strong>Value Add:</strong> This project creates <strong>${formatCurrency(npvVal)}</strong> in value above the cost of capital.</div>`;
+            } else {
+                statusBadge.className = "px-3 py-1 rounded-full text-sm font-bold bg-red-100 text-red-700";
+                statusBadge.innerText = "Destruction";
+                analysisBox.className = "mb-8 p-4 rounded-md bg-red-50 border border-red-200 text-red-800 text-sm font-medium flex items-start gap-3";
+                analysisBox.innerHTML = `<span class="text-lg">⚠️</span> <div><strong>Value Destruction:</strong> This project destroys <strong>${formatCurrency(Math.abs(npvVal))}</strong> in value. It does not meet the hurdle rate.</div>`;
+            }
+
+            // 6. Update Charts
+            updateCharts(tableData, invest, totalRev, totalSav, totalTax, totalFCF);
+            updateTable(tableData);
+        }
+
+        // --- CHARTS ---
+        function updateCharts(data, invest, totRev, totSav, totTax, totFCF) {
+            const years = data.map(d => d.year);
+            const fcf = data.map(d => d.cf);
+            const cum = data.map(d => d.cumulative);
+
+            // 1. CF Chart
+            const trace1 = {
+                x: years, y: fcf, type: 'bar', name: 'Annual FCF',
+                marker: { color: '#cbd5e1' }
+            };
+            const trace2 = {
+                x: years, y: cum, type: 'scatter', mode: 'lines+markers', name: 'Cumulative',
+                line: { color: '#3b82f6', width: 3 }
+            };
+            
+            const layout1 = {
+                title: { text: 'Project Liquidity & Break-even', font: {size: 14} },
+                margin: { t: 40, b: 40, l: 40, r: 20 },
+                height: 320,
+                showlegend: true,
+                legend: { x: 0.01, y: 0.99 },
+                hovermode: 'x unified'
+            };
+            
+            Plotly.react('chart-cf', [trace1, trace2], layout1, {displayModeBar: false});
+
+            // 2. Waterfall
+            // Constructing steps: Invest (down), Rev (up), Sav (up), Tax (down), Net (Total)
+            const netVal = data.reduce((a,b)=>a + b.cf, 0);
+
+            const wfData = [{
+                type: "waterfall",
+                orientation: "v",
+                measure: ["relative", "relative", "relative", "relative", "total"],
+                x: ["Initial Invest", "Total Revenue", "Total Savings", "Tax Impact", "Net Value"],
+                textposition: "outside",
+                text: [
+                    `-${invest.toFixed(1)}M`, 
+                    `+${totRev.toFixed(1)}M`, 
+                    `+${totSav.toFixed(1)}M`, 
+                    `-${totTax.toFixed(1)}M`, 
+                    `${netVal.toFixed(1)}M`
+                ],
+                y: [-invest, totRev, totSav, -totTax, 0], // Note: tax is expense, so negative here
+                connector: { line: { color: "rgb(63, 63, 63)" } },
+                decreasing: { marker: { color: "#EF553B" } },
+                increasing: { marker: { color: "#10b981" } },
+                totals: { marker: { color: "#3b82f6" } }
+            }];
+
+            const layout2 = {
+                title: { text: 'Sources of Value', font: {size: 14} },
+                margin: { t: 40, b: 40, l: 40, r: 20 },
+                height: 320,
+                showlegend: false
+            };
+
+            Plotly.react('chart-waterfall', wfData, layout2, {displayModeBar: false});
+        }
+
+        // --- TABLE ---
+        function updateTable(data) {
+            const tbody = document.getElementById('financial-table-body');
+            tbody.innerHTML = '';
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.className = "bg-white border-b hover:bg-slate-50";
+                tr.innerHTML = `
+                    <td class="px-6 py-4 font-medium text-slate-900">${row.year}</td>
+                    <td class="px-6 py-4">${row.rev.toFixed(2)}</td>
+                    <td class="px-6 py-4">${row.sav.toFixed(2)}</td>
+                    <td class="px-6 py-4 text-red-500">(${row.tax.toFixed(2)})</td>
+                    <td class="px-6 py-4 font-semibold ${row.cf >= 0 ? 'text-green-600' : 'text-red-600'}">${row.cf.toFixed(2)}</td>
+                    <td class="px-6 py-4 font-bold text-slate-900">${row.cumulative.toFixed(2)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function toggleTable() {
+            const container = document.getElementById('table-container');
+            const arrow = document.getElementById('table-arrow');
+            if (container.classList.contains('hidden')) {
+                container.classList.remove('hidden');
+                arrow.style.transform = 'rotate(180deg)';
+            } else {
+                container.classList.add('hidden');
+                arrow.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // --- INIT LISTENERS ---
+        Object.values(inputs).forEach(input => {
+            input.addEventListener('input', calculate);
+        });
+
+        // Initial Run
+        calculate();
+
+    </script>
+</body>
+</html>
